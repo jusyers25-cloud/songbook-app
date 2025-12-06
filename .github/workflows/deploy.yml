@@ -28,7 +28,9 @@ jobs:
           cache: 'npm'
       
       - name: Install dependencies
-        run: npm install
+        run: |
+          npm install
+          npm list @dnd-kit/core @dnd-kit/sortable @dnd-kit/utilities
       
       - name: Build
         env:
