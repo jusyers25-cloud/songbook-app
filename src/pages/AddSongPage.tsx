@@ -2,9 +2,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/lib/supabase/client";
 import { useEffect, useState } from "react";
-import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
-import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
 
 type Song = {
   id: string;
@@ -33,10 +30,8 @@ export default function AddSongPage() {
   const [isLoadingSongDetails, setIsLoadingSongDetails] = useState(false);
   const [favoritesSearchQuery, setFavoritesSearchQuery] = useState("");
   const [savedSearchQuery, setSavedSearchQuery] = useState("");
-  const [favoritesSortBy, setFavoritesSortBy] = useState<'recent' | 'artist' | 'tuning' | 'custom'>('recent');
-  const [savedSortBy, setSavedSortBy] = useState<'recent' | 'artist' | 'tuning' | 'custom'>('recent');
-  const [customFavoritesOrder, setCustomFavoritesOrder] = useState<string[]>([]);
-  const [customSavedOrder, setCustomSavedOrder] = useState<string[]>([]);
+  const [favoritesSortBy, setFavoritesSortBy] = useState<'recent' | 'artist' | 'tuning'>('recent');
+  const [savedSortBy, setSavedSortBy] = useState<'recent' | 'artist' | 'tuning'>('recent');
 
   const addToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
     const id = Date.now() + Math.floor(Math.random() * 1000);
@@ -383,38 +378,14 @@ export default function AddSongPage() {
     await loadSongDetails(song);
   };
 
-  // Sortable Song Item Component
-  const SortableSongItem = ({ song, type, isDraggable }: { song: Song; type: 'favorite' | 'saved'; isDraggable: boolean }) => {
-    const {
-      attributes,
-      listeners,
-      setNodeRef,
-      transform,
-      transition,
-      isDragging,
-    } = useSortable({ id: song.id, disabled: !isDraggable });
-
-    const style = {
-      transform: CSS.Transform.toString(transform),
-      transition,
-      opacity: isDragging ? 0.5 : 1,
-    };
-
+  // Song Item Component
+  const SongItem = ({ song, type }: { song: Song; type: 'favorite' | 'saved' }) => {
     return (
       <li
-        ref={setNodeRef}
-        style={style}
         className={`group relative bg-card border border-border rounded-lg p-2.5 hover:border-${type === 'favorite' ? 'primary' : 'secondary'}/50 hover:shadow-md transition-all cursor-pointer`}
         onClick={() => handleSongClick(song)}
       >
         <div className="flex items-center justify-between gap-2">
-          {isDraggable && (
-            <div {...attributes} {...listeners} className="flex-shrink-0 cursor-grab active:cursor-grabbing p-1" onClick={(e) => e.stopPropagation()}>
-              <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8h16M4 16h16" />
-              </svg>
-            </div>
-          )}
           <div className="flex-1 min-w-0">
             <div className="font-medium text-sm text-foreground truncate">{song.title}</div>
             <div className="text-xs text-muted-foreground truncate">{song.artist}</div>
@@ -436,7 +407,7 @@ export default function AddSongPage() {
     );
   };
 
-  const filterAndSortSongs = (songs: Song[], searchQuery: string, sortBy: 'recent' | 'artist' | 'tuning' | 'custom', customOrder: string[]) => {
+  const filterAndSortSongs = (songs: Song[], searchQuery: string, sortBy: 'recent' | 'artist' | 'tuning') => {
     let filtered = songs;
     
     // Filter by search query
@@ -456,18 +427,6 @@ export default function AddSongPage() {
       case 'tuning':
         // TODO: Will need to fetch tuning data for proper sorting
         break;
-      case 'custom':
-        if (customOrder.length > 0) {
-          sorted.sort((a, b) => {
-            const indexA = customOrder.indexOf(a.id);
-            const indexB = customOrder.indexOf(b.id);
-            if (indexA === -1 && indexB === -1) return 0;
-            if (indexA === -1) return 1;
-            if (indexB === -1) return -1;
-            return indexA - indexB;
-          });
-        }
-        break;
       case 'recent':
       default:
         // Keep original order (most recent first from database)
@@ -475,32 +434,6 @@ export default function AddSongPage() {
     }
     
     return sorted;
-  };
-
-  const sensors = useSensors(
-    useSensor(PointerSensor),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
-  );
-
-  const handleDragEnd = (event: DragEndEvent, type: 'favorites' | 'saved') => {
-    const { active, over } = event;
-    
-    if (!over || active.id === over.id) return;
-    
-    const songs = type === 'favorites' ? learningSongs : savedSongs;
-    const customOrder = type === 'favorites' ? customFavoritesOrder : customSavedOrder;
-    const setCustomOrder = type === 'favorites' ? setCustomFavoritesOrder : setCustomSavedOrder;
-    
-    // Initialize custom order if empty
-    let currentOrder = customOrder.length > 0 ? customOrder : songs.map(s => s.id);
-    
-    const oldIndex = currentOrder.indexOf(active.id as string);
-    const newIndex = currentOrder.indexOf(over.id as string);
-    
-    const newOrder = arrayMove(currentOrder, oldIndex, newIndex);
-    setCustomOrder(newOrder);
   };
 
   return (
@@ -715,23 +648,18 @@ export default function AddSongPage() {
                             <option value="recent">Sort by: Recently Added</option>
                             <option value="artist">Sort by: Artist</option>
                             <option value="tuning">Sort by: Tuning</option>
-                            <option value="custom">Sort by: Custom Order</option>
                           </select>
                         </div>
                         {learningSongs.length === 0 ? (
                           <div className="text-muted-foreground text-center py-12">No favorites yet. Start searching!</div>
-                        ) : filterAndSortSongs(learningSongs, favoritesSearchQuery, favoritesSortBy, customFavoritesOrder).length === 0 ? (
+                        ) : filterAndSortSongs(learningSongs, favoritesSearchQuery, favoritesSortBy).length === 0 ? (
                           <div className="text-muted-foreground text-center py-8">No songs match your search.</div>
                         ) : (
-                          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={(e) => handleDragEnd(e, 'favorites')}>
-                            <SortableContext items={filterAndSortSongs(learningSongs, favoritesSearchQuery, favoritesSortBy, customFavoritesOrder).map(s => s.id)} strategy={verticalListSortingStrategy}>
-                              <ul className="space-y-1.5">
-                                {filterAndSortSongs(learningSongs, favoritesSearchQuery, favoritesSortBy, customFavoritesOrder).map((song) => (
-                                  <SortableSongItem key={song.id} song={song} type="favorite" isDraggable={favoritesSortBy === 'custom'} />
-                                ))}
-                              </ul>
-                            </SortableContext>
-                          </DndContext>
+                          <ul className="space-y-1.5">
+                            {filterAndSortSongs(learningSongs, favoritesSearchQuery, favoritesSortBy).map((song) => (
+                              <SongItem key={song.id} song={song} type="favorite" />
+                            ))}
+                          </ul>
                         )}
                       </div>
                     )}
@@ -758,23 +686,18 @@ export default function AddSongPage() {
                             <option value="recent">Sort by: Recently Added</option>
                             <option value="artist">Sort by: Artist</option>
                             <option value="tuning">Sort by: Tuning</option>
-                            <option value="custom">Sort by: Custom Order</option>
                           </select>
                         </div>
                         {savedSongs.length === 0 ? (
                           <div className="text-muted-foreground text-center py-12">No songs saved for later yet.</div>
-                        ) : filterAndSortSongs(savedSongs, savedSearchQuery, savedSortBy, customSavedOrder).length === 0 ? (
+                        ) : filterAndSortSongs(savedSongs, savedSearchQuery, savedSortBy).length === 0 ? (
                           <div className="text-muted-foreground text-center py-8">No songs match your search.</div>
                         ) : (
-                          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={(e) => handleDragEnd(e, 'saved')}>
-                            <SortableContext items={filterAndSortSongs(savedSongs, savedSearchQuery, savedSortBy, customSavedOrder).map(s => s.id)} strategy={verticalListSortingStrategy}>
-                              <ul className="space-y-1.5">
-                                {filterAndSortSongs(savedSongs, savedSearchQuery, savedSortBy, customSavedOrder).map((song) => (
-                                  <SortableSongItem key={song.id} song={song} type="saved" isDraggable={savedSortBy === 'custom'} />
-                                ))}
-                              </ul>
-                            </SortableContext>
-                          </DndContext>
+                          <ul className="space-y-1.5">
+                            {filterAndSortSongs(savedSongs, savedSearchQuery, savedSortBy).map((song) => (
+                              <SongItem key={song.id} song={song} type="saved" />
+                            ))}
+                          </ul>
                         )}
                       </div>
                     )}
