@@ -4,7 +4,7 @@ import path from 'path'
 
 export default defineConfig({
   plugins: [react()],
-  base: '/Songbook/',
+  base: '/songbook-app/',
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
