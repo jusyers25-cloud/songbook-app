@@ -35,6 +35,23 @@ export default function AddSongPage() {
   const [savedSearchQuery, setSavedSearchQuery] = useState("");
   const [favoritesSortBy, setFavoritesSortBy] = useState<'recent' | 'artist' | 'tuning'>('recent');
   const [savedSortBy, setSavedSortBy] = useState<'recent' | 'artist' | 'tuning'>('recent');
+  
+  // Tuner state
+  const [isTunerActive, setIsTunerActive] = useState(false);
+  const [detectedNote, setDetectedNote] = useState<string | null>(null);
+  const [detectedFrequency, setDetectedFrequency] = useState<number | null>(null);
+  const [selectedTuning, setSelectedTuning] = useState('standard');
+  const [currentString, setCurrentString] = useState(0); // 0-5 for E A D G B E
+
+  // Tuning presets (from low E to high E)
+  const tuningPresets: { [key: string]: { name: string; notes: string[]; frequencies: number[] } } = {
+    standard: { name: 'Standard (EADGBE)', notes: ['E2', 'A2', 'D3', 'G3', 'B3', 'E4'], frequencies: [82.41, 110.00, 146.83, 196.00, 246.94, 329.63] },
+    dropD: { name: 'Drop D (DADGBE)', notes: ['D2', 'A2', 'D3', 'G3', 'B3', 'E4'], frequencies: [73.42, 110.00, 146.83, 196.00, 246.94, 329.63] },
+    halfStep: { name: 'Half Step Down', notes: ['Eb2', 'Ab2', 'Db3', 'Gb3', 'Bb3', 'Eb4'], frequencies: [77.78, 103.83, 138.59, 185.00, 233.08, 311.13] },
+    fullStep: { name: 'Full Step Down', notes: ['D2', 'G2', 'C3', 'F3', 'A3', 'D4'], frequencies: [73.42, 98.00, 130.81, 174.61, 220.00, 293.66] },
+    openG: { name: 'Open G (DGDGBD)', notes: ['D2', 'G2', 'D3', 'G3', 'B3', 'D4'], frequencies: [73.42, 98.00, 146.83, 196.00, 246.94, 293.66] },
+    dadgad: { name: 'DADGAD', notes: ['D2', 'A2', 'D3', 'G3', 'A3', 'D4'], frequencies: [73.42, 110.00, 146.83, 196.00, 220.00, 293.66] },
+  };
 
   const addToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
     const id = Date.now() + Math.floor(Math.random() * 1000);
@@ -209,6 +226,124 @@ export default function AddSongPage() {
   useEffect(() => {
     if (user && user.id) fetchLists(user.id);
   }, [user]);
+
+  // Tuner audio processing
+  useEffect(() => {
+    let audioContext: AudioContext | null = null;
+    let analyser: AnalyserNode | null = null;
+    let microphone: MediaStreamAudioSourceNode | null = null;
+    let rafId: number | null = null;
+
+    const startTuner = async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        audioContext = new AudioContext();
+        analyser = audioContext.createAnalyser();
+        microphone = audioContext.createMediaStreamSource(stream);
+        
+        analyser.fftSize = 4096;
+        microphone.connect(analyser);
+
+        const detectPitch = () => {
+          const buffer = new Float32Array(analyser.fftSize);
+          analyser.getFloatTimeDomainData(buffer);
+          
+          const frequency = autoCorrelate(buffer, audioContext!.sampleRate);
+          
+          if (frequency > 0) {
+            setDetectedFrequency(frequency);
+            setDetectedNote(frequencyToNote(frequency));
+          }
+          
+          rafId = requestAnimationFrame(detectPitch);
+        };
+
+        detectPitch();
+      } catch (err) {
+        console.error('Error accessing microphone:', err);
+        addToast('Microphone access denied', 'error');
+        setIsTunerActive(false);
+      }
+    };
+
+    if (isTunerActive && activeTab === 'tuner') {
+      startTuner();
+    }
+
+    return () => {
+      if (rafId) cancelAnimationFrame(rafId);
+      if (microphone) microphone.disconnect();
+      if (audioContext) audioContext.close();
+    };
+  }, [isTunerActive, activeTab]);
+
+  // Auto-correlation algorithm for pitch detection
+  const autoCorrelate = (buffer: Float32Array, sampleRate: number): number => {
+    let SIZE = buffer.length;
+    let rms = 0;
+    
+    for (let i = 0; i < SIZE; i++) {
+      const val = buffer[i];
+      rms += val * val;
+    }
+    rms = Math.sqrt(rms / SIZE);
+    
+    if (rms < 0.01) return -1;
+    
+    let r1 = 0, r2 = SIZE - 1, thres = 0.2;
+    for (let i = 0; i < SIZE / 2; i++) {
+      if (Math.abs(buffer[i]) < thres) { r1 = i; break; }
+    }
+    for (let i = 1; i < SIZE / 2; i++) {
+      if (Math.abs(buffer[SIZE - i]) < thres) { r2 = SIZE - i; break; }
+    }
+    
+    buffer = buffer.slice(r1, r2);
+    SIZE = buffer.length;
+    
+    const c = new Array(SIZE).fill(0);
+    for (let i = 0; i < SIZE; i++) {
+      for (let j = 0; j < SIZE - i; j++) {
+        c[i] = c[i] + buffer[j] * buffer[j + i];
+      }
+    }
+    
+    let d = 0;
+    while (c[d] > c[d + 1]) d++;
+    
+    let maxval = -1, maxpos = -1;
+    for (let i = d; i < SIZE; i++) {
+      if (c[i] > maxval) {
+        maxval = c[i];
+        maxpos = i;
+      }
+    }
+    
+    let T0 = maxpos;
+    
+    const x1 = c[T0 - 1], x2 = c[T0], x3 = c[T0 + 1];
+    const a = (x1 + x3 - 2 * x2) / 2;
+    const b = (x3 - x1) / 2;
+    if (a) T0 = T0 - b / (2 * a);
+    
+    return sampleRate / T0;
+  };
+
+  // Convert frequency to note name
+  const frequencyToNote = (frequency: number): string => {
+    const noteStrings = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+    const A4 = 440;
+    const C0 = A4 * Math.pow(2, -4.75);
+    const halfSteps = 12 * Math.log2(frequency / C0);
+    const noteIndex = Math.round(halfSteps) % 12;
+    const octave = Math.floor(Math.round(halfSteps) / 12);
+    return noteStrings[noteIndex] + octave;
+  };
+
+  // Get tuning difference in cents
+  const getCentsOff = (frequency: number, targetFrequency: number): number => {
+    return Math.floor(1200 * Math.log2(frequency / targetFrequency));
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -601,8 +736,112 @@ export default function AddSongPage() {
             <>
               <div className="bg-card rounded-xl p-4 shadow-lg border border-border relative">
                 {activeTab === 'tuner' && (
-                  <div className="text-center py-12">
-                    <p className="text-muted-foreground">Tuner feature coming soon...</p>
+                  <div className="space-y-4">
+                    {/* Tuning Preset Selector */}
+                    <div>
+                      <label className="block text-sm font-medium text-foreground mb-2">Select Tuning</label>
+                      <select
+                        value={selectedTuning}
+                        onChange={(e) => { setSelectedTuning(e.target.value); setCurrentString(0); }}
+                        className="w-full h-10 px-3 rounded-lg border border-input bg-card text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                        style={{ backgroundColor: '#1a1a2e', color: '#ffffff' }}
+                      >
+                        {Object.entries(tuningPresets).map(([key, preset]) => (
+                          <option key={key} value={key} style={{ backgroundColor: '#1a1a2e', color: '#ffffff' }}>
+                            {preset.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Start/Stop Tuner Button */}
+                    <Button
+                      onClick={() => setIsTunerActive(!isTunerActive)}
+                      className={`w-full h-12 ${isTunerActive ? 'bg-destructive hover:bg-destructive/90' : 'bg-primary hover:bg-primary/90'}`}
+                    >
+                      {isTunerActive ? '⏸ Stop Tuner' : '▶ Start Tuner'}
+                    </Button>
+
+                    {/* Detected Note Display */}
+                    {isTunerActive && (
+                      <div className="bg-muted/30 rounded-xl p-6 text-center">
+                        <div className="text-6xl font-bold text-primary mb-2">
+                          {detectedNote || '--'}
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          {detectedFrequency ? `${detectedFrequency.toFixed(2)} Hz` : 'Play a string...'}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* String Selector */}
+                    <div className="space-y-2">
+                      <label className="block text-sm font-medium text-foreground">Tune String:</label>
+                      <div className="grid grid-cols-6 gap-2">
+                        {tuningPresets[selectedTuning].notes.map((note, idx) => (
+                          <button
+                            key={idx}
+                            onClick={() => setCurrentString(idx)}
+                            className={`py-3 rounded-lg font-medium transition-all ${
+                              currentString === idx
+                                ? 'bg-primary text-primary-foreground'
+                                : 'bg-muted text-muted-foreground hover:bg-muted/70'
+                            }`}
+                          >
+                            <div className="text-xs">{6 - idx}</div>
+                            <div className="text-sm font-bold">{note}</div>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Tuning Indicator */}
+                    {isTunerActive && detectedFrequency && (
+                      <div className="bg-muted/30 rounded-xl p-4">
+                        <div className="text-center mb-3">
+                          <div className="text-lg font-semibold text-foreground">
+                            Target: {tuningPresets[selectedTuning].notes[currentString]}
+                          </div>
+                        </div>
+                        
+                        {(() => {
+                          const targetFreq = tuningPresets[selectedTuning].frequencies[currentString];
+                          const centsOff = getCentsOff(detectedFrequency, targetFreq);
+                          const isInTune = Math.abs(centsOff) < 5;
+                          
+                          return (
+                            <>
+                              {/* Visual Tuning Bar */}
+                              <div className="relative h-12 bg-background rounded-lg mb-3 overflow-hidden">
+                                <div className="absolute inset-0 flex items-center justify-center">
+                                  <div className="w-1 h-full bg-green-500"></div>
+                                </div>
+                                <div 
+                                  className={`absolute top-0 bottom-0 w-2 transition-all ${
+                                    isInTune ? 'bg-green-500' : centsOff < 0 ? 'bg-blue-500' : 'bg-red-500'
+                                  }`}
+                                  style={{ 
+                                    left: `${50 + Math.max(-45, Math.min(45, centsOff * 0.9))}%`,
+                                    transform: 'translateX(-50%)'
+                                  }}
+                                ></div>
+                              </div>
+
+                              {/* Instruction Text */}
+                              <div className="text-center">
+                                {isInTune ? (
+                                  <div className="text-green-500 font-bold text-lg">✓ In Tune!</div>
+                                ) : centsOff < -5 ? (
+                                  <div className="text-blue-500 font-medium">↑ Tune Higher ({Math.abs(centsOff)} cents flat)</div>
+                                ) : (
+                                  <div className="text-red-500 font-medium">↓ Tune Lower ({centsOff} cents sharp)</div>
+                                )}
+                              </div>
+                            </>
+                          );
+                        })()}
+                      </div>
+                    )}
                   </div>
                 )}
 
