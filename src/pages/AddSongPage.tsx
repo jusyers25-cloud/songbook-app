@@ -761,7 +761,7 @@ export default function AddSongPage() {
                 {activeTab === 'tuner' && (
                   <div className="space-y-4">
                     {/* Tuning Preset Selector */}
-                    <div className="px-2">
+                    <div className="px-4">
                       <label className="block text-sm font-medium text-foreground mb-2">Select Tuning</label>
                       <select
                         value={selectedTuning}
@@ -865,7 +865,7 @@ export default function AddSongPage() {
                     </div>
 
                     {/* All Strings Reference - Circular Note Display */}
-                    <div className="flex justify-center items-center gap-3 mt-6">
+                    <div className="flex justify-center items-center gap-3 mt-6 px-4">
                       {tuningPresets[selectedTuning].notes.map((note, idx) => (
                         <div
                           key={idx}
