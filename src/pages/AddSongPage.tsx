@@ -683,11 +683,12 @@ export default function AddSongPage() {
                           <select
                             value={favoritesSortBy}
                             onChange={(e) => setFavoritesSortBy(e.target.value as any)}
-                            className="w-full h-10 px-3 rounded-lg border border-input bg-card text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring [&>option]:bg-[#1a1a2e] [&>option]:text-foreground"
+                            className="w-full h-10 px-3 rounded-lg border border-input bg-card text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                            style={{ backgroundColor: '#1a1a2e', color: '#ffffff' }}
                           >
-                            <option value="recent">Sort by: Recently Added</option>
-                            <option value="artist">Sort by: Artist</option>
-                            <option value="tuning">Sort by: Tuning</option>
+                            <option value="recent" style={{ backgroundColor: '#1a1a2e', color: '#ffffff' }}>Sort by: Recently Added</option>
+                            <option value="artist" style={{ backgroundColor: '#1a1a2e', color: '#ffffff' }}>Sort by: Artist</option>
+                            <option value="tuning" style={{ backgroundColor: '#1a1a2e', color: '#ffffff' }}>Sort by: Tuning</option>
                           </select>
                         </div>
                         {learningSongs.length === 0 ? (
@@ -721,11 +722,12 @@ export default function AddSongPage() {
                           <select
                             value={savedSortBy}
                             onChange={(e) => setSavedSortBy(e.target.value as any)}
-                            className="w-full h-10 px-3 rounded-lg border border-input bg-card text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring [&>option]:bg-[#1a1a2e] [&>option]:text-foreground"
+                            className="w-full h-10 px-3 rounded-lg border border-input bg-card text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                            style={{ backgroundColor: '#1a1a2e', color: '#ffffff' }}
                           >
-                            <option value="recent">Sort by: Recently Added</option>
-                            <option value="artist">Sort by: Artist</option>
-                            <option value="tuning">Sort by: Tuning</option>
+                            <option value="recent" style={{ backgroundColor: '#1a1a2e', color: '#ffffff' }}>Sort by: Recently Added</option>
+                            <option value="artist" style={{ backgroundColor: '#1a1a2e', color: '#ffffff' }}>Sort by: Artist</option>
+                            <option value="tuning" style={{ backgroundColor: '#1a1a2e', color: '#ffffff' }}>Sort by: Tuning</option>
                           </select>
                         </div>
                         {savedSongs.length === 0 ? (
