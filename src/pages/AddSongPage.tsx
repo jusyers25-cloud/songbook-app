@@ -643,7 +643,7 @@ export default function AddSongPage() {
                           <select
                             value={favoritesSortBy}
                             onChange={(e) => setFavoritesSortBy(e.target.value as any)}
-                            className="w-full h-10 px-3 rounded-lg border border-input bg-card text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                            className="w-full h-10 px-3 rounded-lg border border-input bg-card text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring [&>option]:bg-[#1a1a2e] [&>option]:text-foreground"
                           >
                             <option value="recent">Sort by: Recently Added</option>
                             <option value="artist">Sort by: Artist</option>
@@ -681,7 +681,7 @@ export default function AddSongPage() {
                           <select
                             value={savedSortBy}
                             onChange={(e) => setSavedSortBy(e.target.value as any)}
-                            className="w-full h-10 px-3 rounded-lg border border-input bg-card text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                            className="w-full h-10 px-3 rounded-lg border border-input bg-card text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring [&>option]:bg-[#1a1a2e] [&>option]:text-foreground"
                           >
                             <option value="recent">Sort by: Recently Added</option>
                             <option value="artist">Sort by: Artist</option>
