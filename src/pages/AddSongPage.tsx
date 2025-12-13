@@ -41,6 +41,7 @@ export default function AddSongPage() {
   const [detectedFrequency, setDetectedFrequency] = useState<number | null>(null);
   const [selectedTuning, setSelectedTuning] = useState('standard');
   const [currentString, setCurrentString] = useState(0); // 0-5 for E A D G B E
+  const [tunerStarted, setTunerStarted] = useState(false);
 
   // Tuning presets (from low E to high E)
   const tuningPresets: { [key: string]: { name: string; notes: string[]; frequencies: number[] } } = {
@@ -273,7 +274,7 @@ export default function AddSongPage() {
     };
 
     // Auto-start tuner when on tuner tab
-    if (activeTab === 'tuner') {
+    if (activeTab === 'tuner' && tunerStarted) {
       startTuner();
     }
 
@@ -282,7 +283,7 @@ export default function AddSongPage() {
       if (microphone) microphone.disconnect();
       if (audioContext) audioContext.close();
     };
-  }, [activeTab, selectedTuning]);
+  }, [activeTab, selectedTuning, tunerStarted]);
 
   // Auto-correlation algorithm for pitch detection
   const autoCorrelate = (buffer: Float32Array, sampleRate: number): number => {
@@ -778,8 +779,23 @@ export default function AddSongPage() {
                       </select>
                     </div>
 
-                    {/* Large Dial Display */}
-                    <div className="relative flex flex-col items-center justify-center py-8">
+                    {!tunerStarted ? (
+                      /* Initial Start Button */
+                      <div className="py-12 text-center">
+                        <Button
+                          onClick={() => setTunerStarted(true)}
+                          className="h-14 px-8 text-lg bg-primary hover:bg-primary/90"
+                        >
+                          🎸 Start Tuner
+                        </Button>
+                        <p className="text-xs text-muted-foreground mt-4">
+                          This will request microphone access
+                        </p>
+                      </div>
+                    ) : (
+                      <>
+                        {/* Large Dial Display */}
+                        <div className="relative flex flex-col items-center justify-center py-8">
                       {/* Dial Container */}
                       <div className="relative w-72 h-72">
                         {/* Dial Background Circle */}
@@ -912,6 +928,8 @@ export default function AddSongPage() {
                         ))}
                       </div>
                     </div>
+                    </>
+                    )}
                   </div>
                 )}
 
