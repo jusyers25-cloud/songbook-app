@@ -7,6 +7,7 @@ type Song = {
   id: string;
   title: string;
   artist: string;
+  tuning?: string;
 };
 
 export default function AddSongPage() {
@@ -83,7 +84,7 @@ export default function AddSongPage() {
       console.debug('fetchLists: attempting relational select for saved_songs');
       const { data: savedData, error: savedError } = await supabase
         .from("saved_songs")
-        .select("song_id, songs(id, title, artist)")
+        .select("song_id, tuning, songs(id, title, artist)")
         .eq("user_id", userId);
 
       if (savedError) {
@@ -95,7 +96,7 @@ export default function AddSongPage() {
         if (first && 'songs' in first) {
           setSavedSongs(savedData.map((r: any) => {
             const s = r.songs;
-            return { id: s.id || s.song_id, title: s.title, artist: s.artist };
+            return { id: s.id || s.song_id, title: s.title, artist: s.artist, tuning: r.tuning };
           }));
         } else if (first && ('song_id' in first || 'id' in first) && 'title' in first) {
           setSavedSongs((savedData as any[]).map(s => ({ id: s.song_id || s.id, title: s.title, artist: s.artist })));
@@ -146,7 +147,7 @@ export default function AddSongPage() {
       console.debug('fetchLists: attempting relational select for learning_songs');
       const { data: learningData, error: learningError } = await supabase
         .from("learning_songs")
-        .select("song_id, songs(id, title, artist)")
+        .select("song_id, tuning, songs(id, title, artist)")
         .eq("user_id", userId);
 
       if (learningData && Array.isArray(learningData)) {
@@ -154,7 +155,7 @@ export default function AddSongPage() {
         if (first && 'songs' in first) {
           setLearningSongs(learningData.map((r: any) => {
             const s = r.songs;
-            return { id: s.id || s.song_id, title: s.title, artist: s.artist };
+            return { id: s.id || s.song_id, title: s.title, artist: s.artist, tuning: r.tuning };
           }));
         } else if (first && ('song_id' in first || 'id' in first) && 'title' in first) {
           setLearningSongs((learningData as any[]).map(s => ({ id: s.id || s.song_id, title: s.title, artist: s.artist })));
@@ -393,6 +394,9 @@ export default function AddSongPage() {
         if (error) throw error;
       }
       
+      // Refresh the lists to show updated tuning
+      await fetchLists(user.id);
+      
       addToast('Song details saved!', 'success');
       setViewingSong(null);
     } catch (err: any) {
@@ -415,7 +419,14 @@ export default function AddSongPage() {
       >
         <div className="flex items-center justify-between gap-2">
           <div className="flex-1 min-w-0">
-            <div className="font-medium text-sm text-foreground truncate">{song.title}</div>
+            <div className="flex items-center gap-2">
+              <div className="font-medium text-sm text-foreground truncate">{song.title}</div>
+              {song.tuning && (
+                <span className="flex-shrink-0 px-2 py-0.5 text-[10px] font-medium rounded bg-primary/20 text-primary border border-primary/30">
+                  {song.tuning}
+                </span>
+              )}
+            </div>
             <div className="text-xs text-muted-foreground truncate">{song.artist}</div>
           </div>
           <button
@@ -453,7 +464,11 @@ export default function AddSongPage() {
         sorted.sort((a, b) => a.artist.localeCompare(b.artist));
         break;
       case 'tuning':
-        // TODO: Will need to fetch tuning data for proper sorting
+        sorted.sort((a, b) => {
+          const tuningA = a.tuning || 'zzz'; // Songs without tuning go to end
+          const tuningB = b.tuning || 'zzz';
+          return tuningA.localeCompare(tuningB);
+        });
         break;
       case 'recent':
       default:
