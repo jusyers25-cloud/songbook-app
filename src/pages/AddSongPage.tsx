@@ -295,7 +295,8 @@ export default function AddSongPage() {
     }
     rms = Math.sqrt(rms / SIZE);
     
-    if (rms < 0.01) return -1;
+    // Increased threshold to ignore background noise - only detect louder sounds
+    if (rms < 0.05) return -1;
     
     let r1 = 0, r2 = SIZE - 1, thres = 0.2;
     for (let i = 0; i < SIZE / 2; i++) {
