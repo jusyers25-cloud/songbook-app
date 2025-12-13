@@ -37,7 +37,6 @@ export default function AddSongPage() {
   const [savedSortBy, setSavedSortBy] = useState<'recent' | 'artist' | 'tuning'>('recent');
   
   // Tuner state
-  const [isTunerActive, setIsTunerActive] = useState(false);
   const [detectedNote, setDetectedNote] = useState<string | null>(null);
   const [detectedFrequency, setDetectedFrequency] = useState<number | null>(null);
   const [selectedTuning, setSelectedTuning] = useState('standard');
@@ -252,7 +251,15 @@ export default function AddSongPage() {
           
           if (frequency > 0) {
             setDetectedFrequency(frequency);
-            setDetectedNote(frequencyToNote(frequency));
+            const note = frequencyToNote(frequency);
+            setDetectedNote(note);
+            
+            // Auto-detect which string is being played
+            const closestString = findClosestString(frequency);
+            setCurrentString(closestString);
+          } else {
+            setDetectedFrequency(null);
+            setDetectedNote(null);
           }
           
           rafId = requestAnimationFrame(detectPitch);
@@ -261,12 +268,12 @@ export default function AddSongPage() {
         detectPitch();
       } catch (err) {
         console.error('Error accessing microphone:', err);
-        addToast('Microphone access denied', 'error');
-        setIsTunerActive(false);
+        addToast('Please allow microphone access in your browser settings', 'error');
       }
     };
 
-    if (isTunerActive && activeTab === 'tuner') {
+    // Auto-start tuner when on tuner tab
+    if (activeTab === 'tuner') {
       startTuner();
     }
 
@@ -275,7 +282,7 @@ export default function AddSongPage() {
       if (microphone) microphone.disconnect();
       if (audioContext) audioContext.close();
     };
-  }, [isTunerActive, activeTab]);
+  }, [activeTab, selectedTuning]);
 
   // Auto-correlation algorithm for pitch detection
   const autoCorrelate = (buffer: Float32Array, sampleRate: number): number => {
@@ -343,6 +350,23 @@ export default function AddSongPage() {
   // Get tuning difference in cents
   const getCentsOff = (frequency: number, targetFrequency: number): number => {
     return Math.floor(1200 * Math.log2(frequency / targetFrequency));
+  };
+
+  // Find closest string based on detected frequency
+  const findClosestString = (frequency: number): number => {
+    const frequencies = tuningPresets[selectedTuning].frequencies;
+    let closestIndex = 0;
+    let smallestDiff = Math.abs(frequency - frequencies[0]);
+    
+    for (let i = 1; i < frequencies.length; i++) {
+      const diff = Math.abs(frequency - frequencies[i]);
+      if (diff < smallestDiff) {
+        smallestDiff = diff;
+        closestIndex = i;
+      }
+    }
+    
+    return closestIndex;
   };
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -754,94 +778,140 @@ export default function AddSongPage() {
                       </select>
                     </div>
 
-                    {/* Start/Stop Tuner Button */}
-                    <Button
-                      onClick={() => setIsTunerActive(!isTunerActive)}
-                      className={`w-full h-12 ${isTunerActive ? 'bg-destructive hover:bg-destructive/90' : 'bg-primary hover:bg-primary/90'}`}
-                    >
-                      {isTunerActive ? '⏸ Stop Tuner' : '▶ Start Tuner'}
-                    </Button>
-
-                    {/* Detected Note Display */}
-                    {isTunerActive && (
-                      <div className="bg-muted/30 rounded-xl p-6 text-center">
-                        <div className="text-6xl font-bold text-primary mb-2">
-                          {detectedNote || '--'}
-                        </div>
-                        <div className="text-sm text-muted-foreground">
-                          {detectedFrequency ? `${detectedFrequency.toFixed(2)} Hz` : 'Play a string...'}
+                    {/* Large Dial Display */}
+                    <div className="relative flex flex-col items-center justify-center py-8">
+                      {/* Dial Container */}
+                      <div className="relative w-72 h-72">
+                        {/* Dial Background Circle */}
+                        <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 200 200">
+                          {/* Background arc */}
+                          <path
+                            d="M 30 100 A 70 70 0 1 1 170 100"
+                            fill="none"
+                            stroke="#2d2d44"
+                            strokeWidth="20"
+                            strokeLinecap="round"
+                          />
+                          
+                          {/* Colored sections */}
+                          {/* Flat zone (blue) */}
+                          <path
+                            d="M 30 100 A 70 70 0 0 1 70 45"
+                            fill="none"
+                            stroke="#3b82f6"
+                            strokeWidth="20"
+                            strokeLinecap="round"
+                            opacity="0.6"
+                          />
+                          
+                          {/* In-tune zone (green) */}
+                          <path
+                            d="M 70 45 A 70 70 0 0 1 130 45"
+                            fill="none"
+                            stroke="#22c55e"
+                            strokeWidth="20"
+                            strokeLinecap="round"
+                          />
+                          
+                          {/* Sharp zone (red) */}
+                          <path
+                            d="M 130 45 A 70 70 0 0 1 170 100"
+                            fill="none"
+                            stroke="#ef4444"
+                            strokeWidth="20"
+                            strokeLinecap="round"
+                            opacity="0.6"
+                          />
+                          
+                          {/* Needle indicator */}
+                          {detectedFrequency && (
+                            (() => {
+                              const targetFreq = tuningPresets[selectedTuning].frequencies[currentString];
+                              const centsOff = getCentsOff(detectedFrequency, targetFreq);
+                              // Map cents (-50 to +50) to angle (0 to 180 degrees)
+                              const angle = Math.max(0, Math.min(180, 90 + centsOff * 1.8));
+                              const radians = (angle * Math.PI) / 180;
+                              const needleLength = 65;
+                              const x = 100 + needleLength * Math.cos(radians);
+                              const y = 100 + needleLength * Math.sin(radians);
+                              const isInTune = Math.abs(centsOff) < 5;
+                              
+                              return (
+                                <line
+                                  x1="100"
+                                  y1="100"
+                                  x2={x}
+                                  y2={y}
+                                  stroke={isInTune ? '#22c55e' : centsOff < 0 ? '#3b82f6' : '#ef4444'}
+                                  strokeWidth="4"
+                                  strokeLinecap="round"
+                                />
+                              );
+                            })()
+                          )}
+                          
+                          {/* Center dot */}
+                          <circle cx="100" cy="100" r="6" fill="#6366f1" />
+                        </svg>
+                        
+                        {/* Center content */}
+                        <div className="absolute inset-0 flex flex-col items-center justify-center pt-16">
+                          <div className="text-7xl font-bold text-primary mb-1">
+                            {detectedNote || '--'}
+                          </div>
+                          <div className="text-sm text-muted-foreground mb-4">
+                            {detectedFrequency ? `${detectedFrequency.toFixed(1)} Hz` : 'Play a string...'}
+                          </div>
+                          
+                          {/* Target String Display */}
+                          <div className="bg-muted/50 px-4 py-2 rounded-lg">
+                            <div className="text-xs text-muted-foreground">String {6 - currentString}</div>
+                            <div className="text-lg font-bold text-foreground">
+                              {tuningPresets[selectedTuning].notes[currentString]}
+                            </div>
+                          </div>
                         </div>
                       </div>
-                    )}
 
-                    {/* String Selector */}
-                    <div className="space-y-2">
-                      <label className="block text-sm font-medium text-foreground">Tune String:</label>
+                      {/* Status Text */}
+                      {detectedFrequency && (
+                        <div className="mt-4 text-center">
+                          {(() => {
+                            const targetFreq = tuningPresets[selectedTuning].frequencies[currentString];
+                            const centsOff = getCentsOff(detectedFrequency, targetFreq);
+                            const isInTune = Math.abs(centsOff) < 5;
+                            
+                            if (isInTune) {
+                              return <div className="text-green-500 font-bold text-xl">✓ In Tune!</div>;
+                            } else if (centsOff < -5) {
+                              return <div className="text-blue-500 font-semibold text-lg">↑ Tune Higher</div>;
+                            } else {
+                              return <div className="text-red-500 font-semibold text-lg">↓ Tune Lower</div>;
+                            }
+                          })()}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* All Strings Reference */}
+                    <div className="bg-muted/30 rounded-lg p-3">
+                      <div className="text-xs text-muted-foreground mb-2 text-center">All Strings</div>
                       <div className="grid grid-cols-6 gap-2">
                         {tuningPresets[selectedTuning].notes.map((note, idx) => (
-                          <button
+                          <div
                             key={idx}
-                            onClick={() => setCurrentString(idx)}
-                            className={`py-3 rounded-lg font-medium transition-all ${
+                            className={`py-2 rounded-lg text-center transition-all ${
                               currentString === idx
-                                ? 'bg-primary text-primary-foreground'
-                                : 'bg-muted text-muted-foreground hover:bg-muted/70'
+                                ? 'bg-primary text-primary-foreground font-bold scale-105'
+                                : 'bg-background text-muted-foreground'
                             }`}
                           >
                             <div className="text-xs">{6 - idx}</div>
-                            <div className="text-sm font-bold">{note}</div>
-                          </button>
+                            <div className="text-sm font-medium">{note}</div>
+                          </div>
                         ))}
                       </div>
                     </div>
-
-                    {/* Tuning Indicator */}
-                    {isTunerActive && detectedFrequency && (
-                      <div className="bg-muted/30 rounded-xl p-4">
-                        <div className="text-center mb-3">
-                          <div className="text-lg font-semibold text-foreground">
-                            Target: {tuningPresets[selectedTuning].notes[currentString]}
-                          </div>
-                        </div>
-                        
-                        {(() => {
-                          const targetFreq = tuningPresets[selectedTuning].frequencies[currentString];
-                          const centsOff = getCentsOff(detectedFrequency, targetFreq);
-                          const isInTune = Math.abs(centsOff) < 5;
-                          
-                          return (
-                            <>
-                              {/* Visual Tuning Bar */}
-                              <div className="relative h-12 bg-background rounded-lg mb-3 overflow-hidden">
-                                <div className="absolute inset-0 flex items-center justify-center">
-                                  <div className="w-1 h-full bg-green-500"></div>
-                                </div>
-                                <div 
-                                  className={`absolute top-0 bottom-0 w-2 transition-all ${
-                                    isInTune ? 'bg-green-500' : centsOff < 0 ? 'bg-blue-500' : 'bg-red-500'
-                                  }`}
-                                  style={{ 
-                                    left: `${50 + Math.max(-45, Math.min(45, centsOff * 0.9))}%`,
-                                    transform: 'translateX(-50%)'
-                                  }}
-                                ></div>
-                              </div>
-
-                              {/* Instruction Text */}
-                              <div className="text-center">
-                                {isInTune ? (
-                                  <div className="text-green-500 font-bold text-lg">✓ In Tune!</div>
-                                ) : centsOff < -5 ? (
-                                  <div className="text-blue-500 font-medium">↑ Tune Higher ({Math.abs(centsOff)} cents flat)</div>
-                                ) : (
-                                  <div className="text-red-500 font-medium">↓ Tune Lower ({centsOff} cents sharp)</div>
-                                )}
-                              </div>
-                            </>
-                          );
-                        })()}
-                      </div>
-                    )}
                   </div>
                 )}
 
