@@ -507,7 +507,7 @@ export default function AddSongPage() {
             )}
             
             {!user ? (
-            <div className="w-full bg-card rounded-2xl shadow-2xl p-8 border border-border">
+            <div className="w-full bg-card rounded-2xl shadow-2xl p-8 border border-border relative z-10">
               {showSignup ? (
                 <form onSubmit={handleSignup} className="space-y-4">
                   <h2 className="text-2xl font-semibold text-foreground mb-4">Create Account</h2>
@@ -517,7 +517,7 @@ export default function AddSongPage() {
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="Email"
                     autoComplete="username"
-                    className="h-12"
+                    className="h-12 relative z-20"
                     required
                   />
                   <Input
@@ -526,7 +526,7 @@ export default function AddSongPage() {
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Password"
                     autoComplete="new-password"
-                    className="h-12"
+                    className="h-12 relative z-20"
                     required
                   />
                   <Button type="submit" className="w-full h-12 text-lg">Sign Up</Button>
@@ -544,7 +544,7 @@ export default function AddSongPage() {
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="Email"
                     autoComplete="username"
-                    className="h-12"
+                    className="h-12 relative z-20"
                     required
                   />
                   <Input
@@ -553,7 +553,7 @@ export default function AddSongPage() {
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Password"
                     autoComplete="current-password"
-                    className="h-12"
+                    className="h-12 relative z-20"
                     required
                   />
                   <Button type="submit" className="w-full h-12 text-lg">Log In</Button>
