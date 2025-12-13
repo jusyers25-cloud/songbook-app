@@ -16,6 +16,7 @@ export default function AddSongPage() {
   const [savedSongs, setSavedSongs] = useState<Song[]>([]);
   const [learningSongs, setLearningSongs] = useState<Song[]>([]);
   const [user, setUser] = useState<any | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'tuner' | 'search' | 'songbook' | 'create'>('search');
   const [songbookSubTab, setSongbookSubTab] = useState<'favorites' | 'saved'>('favorites');
   const [showSignup, setShowSignup] = useState(false);
@@ -24,6 +25,7 @@ export default function AddSongPage() {
   const [loginError, setLoginError] = useState<string | null>(null);
   const [toasts, setToasts] = useState<Array<{ id: number; message: string; type?: 'success' | 'error' | 'info' }>>([]);
   const [confirmDelete, setConfirmDelete] = useState<{ type: 'favorite' | 'saved'; song: Song } | null>(null);
+  const [confirmLogout, setConfirmLogout] = useState(false);
   const [viewingSong, setViewingSong] = useState<Song | null>(null);
   const [songTuning, setSongTuning] = useState("");
   const [songNotes, setSongNotes] = useState("");
@@ -41,17 +43,38 @@ export default function AddSongPage() {
     }, 3500);
   };
 
-  // load current user on mount
+  // load current user on mount and set up persistent session
   useEffect(() => {
     let mounted = true;
     const loadUser = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (mounted) setUser(user ?? null);
+      try {
+        // Check for existing session
+        const { data: { session } } = await supabase.auth.getSession();
+        if (mounted) {
+          setUser(session?.user ?? null);
+          setIsLoading(false);
+        }
+      } catch (error) {
+        console.error('Error loading user:', error);
+        if (mounted) {
+          setUser(null);
+          setIsLoading(false);
+        }
+      }
     };
     loadUser();
-    return () => { mounted = false };
+
+    // Listen for auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (mounted) {
+        setUser(session?.user ?? null);
+      }
+    });
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   // fetch saved and learning lists for current user
@@ -221,10 +244,15 @@ export default function AddSongPage() {
   };
 
   const handleLogout = async () => {
+    setConfirmLogout(true);
+  };
+
+  const confirmLogoutAction = async () => {
     await supabase.auth.signOut();
     setUser(null);
     setSavedSongs([]);
     setLearningSongs([]);
+    setConfirmLogout(false);
   };
 
   const handleChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -435,6 +463,18 @@ export default function AddSongPage() {
     
     return sorted;
   };
+
+  // Show loading state while checking authentication
+  if (isLoading) {
+    return (
+      <div className="min-h-screen h-screen bg-[#0f0f1a] flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen h-screen bg-[#0f0f1a] flex flex-col">
@@ -777,6 +817,33 @@ export default function AddSongPage() {
                   }}
                 >
                   Remove
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Logout Confirmation Dialog */}
+        {confirmLogout && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-card border border-border rounded-2xl shadow-2xl max-w-sm w-full p-6 space-y-4">
+              <h3 className="text-xl font-semibold text-foreground">Log Out?</h3>
+              <p className="text-sm text-muted-foreground">
+                Are you sure you want to log out of your account?
+              </p>
+              <div className="flex gap-3 pt-2">
+                <Button
+                  variant="ghost"
+                  className="flex-1"
+                  onClick={() => setConfirmLogout(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  className="flex-1 bg-destructive hover:bg-destructive/90 text-white"
+                  onClick={confirmLogoutAction}
+                >
+                  Log Out
                 </Button>
               </div>
             </div>
