@@ -758,11 +758,11 @@ export default function AddSongPage() {
             </div>
           ) : (
             <>
-              <div className="bg-card rounded-xl p-4 shadow-lg border border-border relative overflow-hidden">
+              <div className="bg-card rounded-xl p-4 shadow-lg border border-border relative">
                 {activeTab === 'tuner' && (
-                  <div className="flex flex-col h-[calc(100vh-200px)] overflow-hidden">
+                  <div className="flex flex-col h-full">
                     {/* Tuning Preset Selector */}
-                    <div className="flex-shrink-0">
+                    <div className="mb-3">
                       <label className="block text-sm font-medium text-foreground mb-2 text-center">Select Tuning</label>
                       <select
                         value={selectedTuning}
@@ -779,9 +779,9 @@ export default function AddSongPage() {
                     </div>
 
                     {/* Large Dial Display */}
-                    <div className="relative flex flex-col items-center justify-center flex-1 overflow-hidden">
+                    <div className="relative flex flex-col items-center justify-center flex-1">
                       {/* Dial Container */}
-                      <div className="relative w-72 h-72 flex-shrink-0">
+                      <div className="relative w-64 h-64">
                         {/* Speedometer Dial */}
                         <svg className="absolute inset-0 w-full h-full" viewBox="0 0 200 200">
                           {/* Background arc - nearly full circle */}
@@ -866,11 +866,11 @@ export default function AddSongPage() {
                     </div>
 
                     {/* All Strings Reference - Circular Note Display */}
-                    <div className="flex justify-center items-center gap-2 pb-4 flex-shrink-0">
+                    <div className="flex justify-center items-center gap-2 pb-2">
                       {tuningPresets[selectedTuning].notes.map((note, idx) => (
                         <div
                           key={idx}
-                          className={`w-14 h-14 rounded-full flex items-center justify-center text-xl font-bold transition-all bg-blue-500 ${
+                          className={`w-12 h-12 rounded-full flex items-center justify-center text-lg font-bold transition-all bg-blue-500 ${
                             currentString === idx
                               ? 'text-white scale-110 shadow-lg'
                               : 'text-blue-100/70'
