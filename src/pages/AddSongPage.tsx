@@ -778,9 +778,9 @@ export default function AddSongPage() {
                     </div>
 
                     {/* Large Dial Display */}
-                    <div className="relative flex flex-col items-center justify-center py-6">
+                    <div className="relative flex flex-col items-center justify-center flex-1">
                       {/* Dial Container */}
-                      <div className="relative w-64 h-64">
+                      <div className="relative w-72 h-72">
                         {/* Speedometer Dial */}
                         <svg className="absolute inset-0 w-full h-full" viewBox="0 0 200 200">
                           {/* Background arc - nearly full circle */}
