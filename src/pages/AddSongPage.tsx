@@ -761,7 +761,7 @@ export default function AddSongPage() {
                 {activeTab === 'tuner' && (
                   <div className="space-y-4">
                     {/* Tuning Preset Selector */}
-                    <div>
+                    <div className="px-2">
                       <label className="block text-sm font-medium text-foreground mb-2">Select Tuning</label>
                       <select
                         value={selectedTuning}
@@ -869,10 +869,10 @@ export default function AddSongPage() {
                       {tuningPresets[selectedTuning].notes.map((note, idx) => (
                         <div
                           key={idx}
-                          className={`w-14 h-14 rounded-full flex items-center justify-center text-xl font-bold transition-all ${
+                          className={`w-14 h-14 rounded-full flex items-center justify-center text-xl font-bold transition-all bg-blue-500 ${
                             currentString === idx
-                              ? 'bg-primary text-primary-foreground scale-110 shadow-lg'
-                              : 'bg-muted/50 text-muted-foreground'
+                              ? 'text-white scale-110 shadow-lg'
+                              : 'text-blue-100/70'
                           }`}
                         >
                           {note.replace(/[0-9]/g, '')}
