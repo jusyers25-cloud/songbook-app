@@ -467,6 +467,12 @@ export default function AddSongPage() {
         sorted.sort((a, b) => {
           const tuningA = a.tuning || 'zzz'; // Songs without tuning go to end
           const tuningB = b.tuning || 'zzz';
+          
+          // Standard tuning always comes first
+          if (tuningA.toLowerCase() === 'standard') return -1;
+          if (tuningB.toLowerCase() === 'standard') return 1;
+          
+          // Rest alphabetically
           return tuningA.localeCompare(tuningB);
         });
         break;
