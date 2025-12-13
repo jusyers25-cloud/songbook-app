@@ -758,11 +758,11 @@ export default function AddSongPage() {
             </div>
           ) : (
             <>
-              <div className="bg-card rounded-xl p-4 shadow-lg border border-border relative">
+              <div className="bg-card rounded-xl p-4 shadow-lg border border-border relative overflow-hidden">
                 {activeTab === 'tuner' && (
-                  <div className="space-y-4 flex flex-col min-h-[600px]">
+                  <div className="flex flex-col h-[calc(100vh-200px)] overflow-hidden">
                     {/* Tuning Preset Selector */}
-                    <div>
+                    <div className="flex-shrink-0">
                       <label className="block text-sm font-medium text-foreground mb-2 text-center">Select Tuning</label>
                       <select
                         value={selectedTuning}
@@ -779,9 +779,9 @@ export default function AddSongPage() {
                     </div>
 
                     {/* Large Dial Display */}
-                    <div className="relative flex flex-col items-center justify-center flex-1">
+                    <div className="relative flex flex-col items-center justify-center flex-1 overflow-hidden">
                       {/* Dial Container */}
-                      <div className="relative w-72 h-72">
+                      <div className="relative w-72 h-72 flex-shrink-0">
                         {/* Speedometer Dial */}
                         <svg className="absolute inset-0 w-full h-full" viewBox="0 0 200 200">
                           {/* Background arc - nearly full circle */}
@@ -866,7 +866,7 @@ export default function AddSongPage() {
                     </div>
 
                     {/* All Strings Reference - Circular Note Display */}
-                    <div className="flex justify-center items-center gap-2 mt-auto pb-4">
+                    <div className="flex justify-center items-center gap-2 pb-4 flex-shrink-0">
                       {tuningPresets[selectedTuning].notes.map((note, idx) => (
                         <div
                           key={idx}
