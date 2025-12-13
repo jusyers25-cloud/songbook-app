@@ -518,6 +518,9 @@ export default function AddSongPage() {
                     placeholder="Email"
                     autoComplete="username"
                     className="h-12 relative z-20"
+                    style={{ WebkitUserSelect: 'text', userSelect: 'text' }}
+                    readOnly={false}
+                    onFocus={(e) => e.target.readOnly = false}
                     required
                   />
                   <Input
@@ -527,6 +530,9 @@ export default function AddSongPage() {
                     placeholder="Password"
                     autoComplete="new-password"
                     className="h-12 relative z-20"
+                    style={{ WebkitUserSelect: 'text', userSelect: 'text' }}
+                    readOnly={false}
+                    onFocus={(e) => e.target.readOnly = false}
                     required
                   />
                   <Button type="submit" className="w-full h-12 text-lg">Sign Up</Button>
@@ -545,6 +551,9 @@ export default function AddSongPage() {
                     placeholder="Email"
                     autoComplete="username"
                     className="h-12 relative z-20"
+                    style={{ WebkitUserSelect: 'text', userSelect: 'text' }}
+                    readOnly={false}
+                    onFocus={(e) => e.target.readOnly = false}
                     required
                   />
                   <Input
@@ -554,6 +563,9 @@ export default function AddSongPage() {
                     placeholder="Password"
                     autoComplete="current-password"
                     className="h-12 relative z-20"
+                    style={{ WebkitUserSelect: 'text', userSelect: 'text' }}
+                    readOnly={false}
+                    onFocus={(e) => e.target.readOnly = false}
                     required
                   />
                   <Button type="submit" className="w-full h-12 text-lg">Log In</Button>
