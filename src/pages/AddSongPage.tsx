@@ -336,15 +336,14 @@ export default function AddSongPage() {
     return sampleRate / T0;
   };
 
-  // Convert frequency to note name
+  // Convert frequency to note name (without octave)
   const frequencyToNote = (frequency: number): string => {
     const noteStrings = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
     const A4 = 440;
     const C0 = A4 * Math.pow(2, -4.75);
     const halfSteps = 12 * Math.log2(frequency / C0);
     const noteIndex = Math.round(halfSteps) % 12;
-    const octave = Math.floor(Math.round(halfSteps) / 12);
-    return noteStrings[noteIndex] + octave;
+    return noteStrings[noteIndex];
   };
 
   // Get tuning difference in cents
@@ -781,46 +780,45 @@ export default function AddSongPage() {
                     {/* Large Dial Display */}
                     <div className="relative flex flex-col items-center justify-center py-8">
                       {/* Dial Container */}
-                      <div className="relative w-72 h-72">
-                        {/* Dial Background Circle */}
-                        <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 200 200">
-                          {/* Background arc */}
+                      <div className="relative w-80 h-80">
+                        {/* Speedometer Dial */}
+                        <svg className="absolute inset-0 w-full h-full" viewBox="0 0 200 200">
+                          {/* Background arc - nearly full circle */}
                           <path
-                            d="M 30 100 A 70 70 0 1 1 170 100"
+                            d="M 20 120 A 80 80 0 1 1 180 120"
                             fill="none"
                             stroke="#2d2d44"
-                            strokeWidth="20"
+                            strokeWidth="16"
                             strokeLinecap="round"
                           />
                           
-                          {/* Colored sections */}
-                          {/* Flat zone (blue) */}
+                          {/* Flat zone (blue) - left side */}
                           <path
-                            d="M 30 100 A 70 70 0 0 1 70 45"
+                            d="M 20 120 A 80 80 0 0 1 85 25"
                             fill="none"
                             stroke="#3b82f6"
-                            strokeWidth="20"
+                            strokeWidth="16"
                             strokeLinecap="round"
-                            opacity="0.6"
+                            opacity="0.7"
                           />
                           
-                          {/* In-tune zone (green) */}
+                          {/* In-tune zone (green) - small section at top center */}
                           <path
-                            d="M 70 45 A 70 70 0 0 1 130 45"
+                            d="M 85 25 A 80 80 0 0 1 115 25"
                             fill="none"
                             stroke="#22c55e"
-                            strokeWidth="20"
+                            strokeWidth="16"
                             strokeLinecap="round"
                           />
                           
-                          {/* Sharp zone (red) */}
+                          {/* Sharp zone (red) - right side */}
                           <path
-                            d="M 130 45 A 70 70 0 0 1 170 100"
+                            d="M 115 25 A 80 80 0 0 1 180 120"
                             fill="none"
                             stroke="#ef4444"
-                            strokeWidth="20"
+                            strokeWidth="16"
                             strokeLinecap="round"
-                            opacity="0.6"
+                            opacity="0.7"
                           />
                           
                           {/* Needle indicator */}
@@ -828,10 +826,12 @@ export default function AddSongPage() {
                             (() => {
                               const targetFreq = tuningPresets[selectedTuning].frequencies[currentString];
                               const centsOff = getCentsOff(detectedFrequency, targetFreq);
-                              // Map cents (-50 to +50) to angle (0 to 180 degrees)
-                              const angle = Math.max(0, Math.min(180, 90 + centsOff * 1.8));
-                              const radians = (angle * Math.PI) / 180;
-                              const needleLength = 65;
+                              // Map cents (-50 to +50) to angle spanning the arc
+                              // -50 cents = left edge (~225deg), 0 cents = top (~270deg), +50 cents = right edge (~315deg)
+                              const angle = 225 + ((centsOff + 50) * 90) / 100; // 225 to 315 degrees
+                              const clampedAngle = Math.max(225, Math.min(315, angle));
+                              const radians = (clampedAngle * Math.PI) / 180;
+                              const needleLength = 72;
                               const x = 100 + needleLength * Math.cos(radians);
                               const y = 100 + needleLength * Math.sin(radians);
                               const isInTune = Math.abs(centsOff) < 5;
@@ -843,7 +843,7 @@ export default function AddSongPage() {
                                   x2={x}
                                   y2={y}
                                   stroke={isInTune ? '#22c55e' : centsOff < 0 ? '#3b82f6' : '#ef4444'}
-                                  strokeWidth="4"
+                                  strokeWidth="3"
                                   strokeLinecap="round"
                                 />
                               );
@@ -851,66 +851,33 @@ export default function AddSongPage() {
                           )}
                           
                           {/* Center dot */}
-                          <circle cx="100" cy="100" r="6" fill="#6366f1" />
+                          <circle cx="100" cy="100" r="5" fill="#6366f1" />
                         </svg>
                         
-                        {/* Center content */}
-                        <div className="absolute inset-0 flex flex-col items-center justify-center pt-16">
-                          <div className="text-7xl font-bold text-primary mb-1">
+                        {/* Center note display */}
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <div className="text-8xl font-bold text-primary">
                             {detectedNote || '--'}
                           </div>
-                          <div className="text-sm text-muted-foreground mb-4">
-                            {detectedFrequency ? `${detectedFrequency.toFixed(1)} Hz` : 'Play a string...'}
-                          </div>
-                          
-                          {/* Target String Display */}
-                          <div className="bg-muted/50 px-4 py-2 rounded-lg">
-                            <div className="text-xs text-muted-foreground">String {6 - currentString}</div>
-                            <div className="text-lg font-bold text-foreground">
-                              {tuningPresets[selectedTuning].notes[currentString]}
-                            </div>
-                          </div>
                         </div>
                       </div>
 
-                      {/* Status Text */}
-                      {detectedFrequency && (
-                        <div className="mt-4 text-center">
-                          {(() => {
-                            const targetFreq = tuningPresets[selectedTuning].frequencies[currentString];
-                            const centsOff = getCentsOff(detectedFrequency, targetFreq);
-                            const isInTune = Math.abs(centsOff) < 5;
-                            
-                            if (isInTune) {
-                              return <div className="text-green-500 font-bold text-xl">✓ In Tune!</div>;
-                            } else if (centsOff < -5) {
-                              return <div className="text-blue-500 font-semibold text-lg">↑ Tune Higher</div>;
-                            } else {
-                              return <div className="text-red-500 font-semibold text-lg">↓ Tune Lower</div>;
-                            }
-                          })()}
-                        </div>
-                      )}
                     </div>
 
-                    {/* All Strings Reference */}
-                    <div className="bg-muted/30 rounded-lg p-3">
-                      <div className="text-xs text-muted-foreground mb-2 text-center">All Strings</div>
-                      <div className="grid grid-cols-6 gap-2">
-                        {tuningPresets[selectedTuning].notes.map((note, idx) => (
-                          <div
-                            key={idx}
-                            className={`py-2 rounded-lg text-center transition-all ${
-                              currentString === idx
-                                ? 'bg-primary text-primary-foreground font-bold scale-105'
-                                : 'bg-background text-muted-foreground'
-                            }`}
-                          >
-                            <div className="text-xs">{6 - idx}</div>
-                            <div className="text-sm font-medium">{note}</div>
-                          </div>
-                        ))}
-                      </div>
+                    {/* All Strings Reference - Circular Note Display */}
+                    <div className="flex justify-center items-center gap-3 mt-6">
+                      {tuningPresets[selectedTuning].notes.map((note, idx) => (
+                        <div
+                          key={idx}
+                          className={`w-14 h-14 rounded-full flex items-center justify-center text-xl font-bold transition-all ${
+                            currentString === idx
+                              ? 'bg-primary text-primary-foreground scale-110 shadow-lg'
+                              : 'bg-muted/50 text-muted-foreground'
+                          }`}
+                        >
+                          {note.replace(/[0-9]/g, '')}
+                        </div>
+                      ))}
                     </div>
                   </div>
                 )}
