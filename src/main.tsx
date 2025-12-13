@@ -12,7 +12,10 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
 // Auto-update PWA when new version is available
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/songbook-app/sw.js').then((registration) => {
-    // Check for updates every 60 seconds
+    // Check for updates immediately on load
+    registration.update();
+    
+    // Also check for updates every 60 seconds
     setInterval(() => {
       registration.update();
     }, 60000);
