@@ -761,8 +761,8 @@ export default function AddSongPage() {
                 {activeTab === 'tuner' && (
                   <div className="space-y-4">
                     {/* Tuning Preset Selector */}
-                    <div className="px-12">
-                      <label className="block text-sm font-medium text-foreground mb-2">Select Tuning</label>
+                    <div>
+                      <label className="block text-sm font-medium text-foreground mb-2 text-center">Select Tuning</label>
                       <select
                         value={selectedTuning}
                         onChange={(e) => { setSelectedTuning(e.target.value); setCurrentString(0); }}
@@ -778,9 +778,9 @@ export default function AddSongPage() {
                     </div>
 
                     {/* Large Dial Display */}
-                    <div className="relative flex flex-col items-center justify-center py-8">
+                    <div className="relative flex flex-col items-center justify-center py-6">
                       {/* Dial Container */}
-                      <div className="relative w-80 h-80">
+                      <div className="relative w-64 h-64">
                         {/* Speedometer Dial */}
                         <svg className="absolute inset-0 w-full h-full" viewBox="0 0 200 200">
                           {/* Background arc - nearly full circle */}
@@ -856,7 +856,7 @@ export default function AddSongPage() {
                         
                         {/* Center note display */}
                         <div className="absolute inset-0 flex items-center justify-center">
-                          <div className="text-8xl font-bold text-primary">
+                          <div className="text-7xl font-bold text-primary">
                             {detectedNote || '--'}
                           </div>
                         </div>
@@ -865,11 +865,11 @@ export default function AddSongPage() {
                     </div>
 
                     {/* All Strings Reference - Circular Note Display */}
-                    <div className="flex justify-center items-center gap-3 mt-6 px-12">
+                    <div className="flex justify-center items-center gap-2 mt-4">
                       {tuningPresets[selectedTuning].notes.map((note, idx) => (
                         <div
                           key={idx}
-                          className={`w-14 h-14 rounded-full flex items-center justify-center text-xl font-bold transition-all bg-blue-500 ${
+                          className={`w-12 h-12 rounded-full flex items-center justify-center text-lg font-bold transition-all bg-blue-500 ${
                             currentString === idx
                               ? 'text-white scale-110 shadow-lg'
                               : 'text-blue-100/70'
