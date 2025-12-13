@@ -1,5 +1,5 @@
 // Service Worker for PWA auto-updates
-const CACHE_NAME = 'songbook-v1';
+const CACHE_NAME = 'songbook-v2';
 
 self.addEventListener('install', (event) => {
   // Skip waiting to activate immediately
