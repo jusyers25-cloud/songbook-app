@@ -865,11 +865,11 @@ export default function AddSongPage() {
                     </div>
 
                     {/* All Strings Reference - Circular Note Display */}
-                    <div className="flex justify-center items-center gap-2 mt-4">
+                    <div className="flex justify-center items-center gap-2 mt-8">
                       {tuningPresets[selectedTuning].notes.map((note, idx) => (
                         <div
                           key={idx}
-                          className={`w-12 h-12 rounded-full flex items-center justify-center text-lg font-bold transition-all bg-blue-500 ${
+                          className={`w-14 h-14 rounded-full flex items-center justify-center text-xl font-bold transition-all bg-blue-500 ${
                             currentString === idx
                               ? 'text-white scale-110 shadow-lg'
                               : 'text-blue-100/70'
